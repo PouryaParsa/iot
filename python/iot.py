@@ -1,11 +1,27 @@
 #!/usr/bin/env python
-import json,urllib2,serial
+import json
+import requests
+import serial
+import time
 
-url="http://b.phodal.com/athome/1"
+url = "http://b.phodal.com/athome/1"
+serialport = serial.Serial("/dev/ttyACM0", 9600)
+
 while True:
-    status=json.load(urllib2.urlopen(url))[0]['led1']
-    serialport=serial.Serial("/dev/ttyACM0",9600)
-    if status==1 :
-        serialport.write('1')
-    elif status==0:
-        serialport.write('0')
+    try:
+        response = requests.get(url)
+        status = response.json()[0]['led1']
+
+        if status in (0, 1):
+            serialport.write(str(status))
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error in HTTP request: {e}")
+
+    except json.JSONDecodeError as e:
+        print(f"Error decoding JSON: {e}")
+
+    except serial.SerialException as e:
+        print(f"Error in serial communication: {e}")
+
+    time.sleep(1)
